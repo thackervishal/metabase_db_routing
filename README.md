@@ -58,11 +58,19 @@ running before you start.
 
 ### 1. Add your license token
 
-Edit `.env` and replace the placeholder:
+Copy the example file and fill in your token:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env`:
 
 ```
 MB_PREMIUM_EMBEDDING_TOKEN=your_actual_token_here
 ```
+
+`.env` is gitignored and will never be committed.
 
 ### 2. Start the stack
 
@@ -207,7 +215,10 @@ Stops all containers, removes their volumes (database data), and deletes `.demo-
 ├── setup.sh             # One-time configuration via Metabase REST API
 ├── demo.sh              # Five-step proof of routing behavior
 ├── teardown.sh          # docker compose down -v + state cleanup
-├── .env                 # License token (fill in before starting)
+├── .env.example         # Token template — copy to .env and fill in
+├── .env                 # Your actual token (gitignored, never committed)
+├── .demo-state          # IDs written by setup.sh (gitignored)
+├── .gitignore
 └── README.md
 ```
 
@@ -231,8 +242,8 @@ Run `docker compose logs -f metabase` in a separate terminal to watch progress.
 
 **"routing" API returns 404**
 Database routing is a Metabase Enterprise/Pro feature. Verify your
-`MB_PREMIUM_EMBEDDING_TOKEN` in `.env` is valid and matches a license that
-includes database routing.
+`MB_PREMIUM_EMBEDDING_TOKEN` in `.env` (copied from `.env.example`) is valid
+and matches a license that includes database routing.
 
 **Tenant data doesn't switch after attribute change**
 Sessions are cached. `demo.sh` always fetches a fresh session token for Alice
