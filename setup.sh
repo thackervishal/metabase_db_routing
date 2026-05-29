@@ -52,11 +52,18 @@ echo "────────────────────────�
 echo "STEP 1: Waiting for Metabase to become healthy..."
 echo "──────────────────────────────────────────────────────────"
 
-until curl -sf "$MB_URL/api/health" | grep -q '"status":"ok"'; do
+until curl -sf --max-time 5 "$MB_URL/api/health" | grep -q '"status":"ok"'; do
   echo "  Metabase not ready yet — retrying in 5s..."
   sleep 5
 done
-echo "  Metabase is healthy."
+echo "  HTTP layer ready — waiting for app to finish initializing..."
+# /api/health can return ok before the app is fully booted; poll
+# /api/session/properties which is only served once the app is ready.
+until curl -sf --max-time 5 "$MB_URL/api/session/properties" | jq -e '.version' > /dev/null 2>&1; do
+  echo "  App still initializing — retrying in 5s..."
+  sleep 5
+done
+echo "  Metabase is fully ready."
 
 # ── STEP 2: complete first-run setup if needed ────────────────────────────────
 
@@ -69,7 +76,7 @@ SETUP_TOKEN=$(curl -sf "$MB_URL/api/session/properties" | jq -r '.["setup-token"
 
 if [[ -n "$SETUP_TOKEN" ]]; then
   echo "  First-run setup token found — completing initial setup..."
-  SETUP_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$MB_URL/api/setup" \
+  SETUP_RAW=$(curl -s --max-time 60 -w '\n%{http_code}' -X POST "$MB_URL/api/setup" \
     -H "Content-Type: application/json" \
     -d '{
       "token": "'"$SETUP_TOKEN"'",
@@ -85,8 +92,11 @@ if [[ -n "$SETUP_TOKEN" ]]; then
         "allow_tracking": false
       }
     }')
+  SETUP_HTTP=$(tail -n1 <<<"$SETUP_RAW")
+  SETUP_BODY=$(sed '$d' <<<"$SETUP_RAW")
   if [[ "$SETUP_HTTP" -lt 200 || "$SETUP_HTTP" -ge 300 ]]; then
     echo "ERROR: First-run setup failed (HTTP $SETUP_HTTP)" >&2
+    echo "$SETUP_BODY" >&2
     exit 1
   fi
   echo "  Setup complete."

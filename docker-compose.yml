@@ -1,3 +1,8 @@
+volumes:
+  mb-appdb-data:
+  tenant-a-data:
+  tenant-b-data:
+
 services:
   mb-app-db:
     image: postgres:latest
@@ -5,6 +10,8 @@ services:
       POSTGRES_DB: metabase
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    volumes:
+      - mb-appdb-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d metabase"]
       interval: 5s
@@ -21,6 +28,7 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - ./seed-a.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+      - tenant-a-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d tenantdb"]
       interval: 5s
@@ -37,6 +45,7 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - ./seed-b.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+      - tenant-b-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d tenantdb"]
       interval: 5s
