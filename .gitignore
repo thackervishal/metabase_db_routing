@@ -1,0 +1,5 @@
+# secrets — never commit
+.env
+
+# runtime state written by setup.sh
+.demo-state
