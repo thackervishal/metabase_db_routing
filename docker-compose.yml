@@ -5,7 +5,7 @@ volumes:
 
 services:
   mb-app-db:
-    image: postgres:latest
+    image: postgres:18-alpine
     environment:
       POSTGRES_DB: metabase
       POSTGRES_USER: postgres
@@ -19,7 +19,7 @@ services:
       retries: 10
 
   pg-tenant-a:
-    image: postgres:latest
+    image: postgres:18-alpine
     ports:
       - "5433:5432"
     environment:
@@ -36,7 +36,7 @@ services:
       retries: 10
 
   pg-tenant-b:
-    image: postgres:latest
+    image: postgres:18-alpine
     ports:
       - "5434:5432"
     environment:

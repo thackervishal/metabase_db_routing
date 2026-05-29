@@ -3,7 +3,7 @@
 This demo proves that Metabase's database routing is handled entirely by the
 **query processor**, not by the delivery mechanism. Whether a query originates
 from the UI or from a direct API call, the routing decision is made server-side
-based on the user's `login_attributes` — no JWT tokens or SSO setup required.
+based on the user's `login_attributes`.
 
 ---
 
@@ -18,7 +18,7 @@ based on the user's `login_attributes` — no JWT tokens or SSO setup required.
 7. Alice re-queries the same card → gets **Tenant B data**.
 
 Same card. Same endpoint. Same user. Only the attribute changed.
-The query processor resolved the routing — not the frontend, not JWT, not SSO.
+The query processor resolved the routing — not the frontend or API.
 
 ---
 
@@ -113,21 +113,23 @@ This script:
 ```
 
 Watch the output as Alice's routing attribute is changed and the query results
-switch from Tenant A data to Tenant B data without touching the card, the
-endpoint, or any JWT configuration.
+switch from Tenant A data to Tenant B data for queries issued using an API
 
 ---
 
 
 ## Expected test results
-``` sh
+```
  ./demo.sh 
   Loaded state: CARD_ID=133  ALICE_ID=2
+  Alice session token (reused for all queries): a692abf1…
 
 ──────────────────────────────────────────────────────────
 >>> STEP 1: Alice has no 'tenant_db' attribute set.
     Calling /api/card/133/query/json as Alice...
 ──────────────────────────────────────────────────────────
+  curl -X POST http://localhost:3000/api/card/133/query/json \
+       -H 'X-Metabase-Session: a692abf1…'
 
   (query returned error: Required user attribute is missing. Cannot route to a Destination Database.)
 
@@ -135,7 +137,7 @@ endpoint, or any JWT configuration.
 
 ──────────────────────────────────────────────────────────
 >>> STEP 2: Admin sets Alice's 'tenant_db' attribute to 'tenant-a'
-    (Using PUT /api/user/2 — no JWT involved)
+    (Using PUT /api/user/2)
 ──────────────────────────────────────────────────────────
 
   Confirmed login_attributes on Alice:
@@ -146,6 +148,8 @@ endpoint, or any JWT configuration.
 ──────────────────────────────────────────────────────────
 >>> STEP 3: Calling same card as Alice (attribute = tenant-a)...
 ──────────────────────────────────────────────────────────
+  curl -X POST http://localhost:3000/api/card/133/query/json \
+       -H 'X-Metabase-Session: a692abf1…'
 
 id | customer | amount | tenant_label
 --- | --- | --- | ---
@@ -157,7 +161,7 @@ id | customer | amount | tenant_label
 
 ──────────────────────────────────────────────────────────
 >>> STEP 4: Admin switches Alice's attribute to 'tenant-b'
-    (Same API call, different value — still no JWT)
+    (Same API call, different value for user attribute for db routing )
 ──────────────────────────────────────────────────────────
 
   Confirmed login_attributes on Alice:
@@ -168,6 +172,8 @@ id | customer | amount | tenant_label
 ──────────────────────────────────────────────────────────
 >>> STEP 5: Calling SAME card, SAME endpoint, SAME user — attribute changed...
 ──────────────────────────────────────────────────────────
+  curl -X POST http://localhost:3000/api/card/133/query/json \
+       -H 'X-Metabase-Session: a692abf1…'
 
 id | customer | amount | tenant_label
 --- | --- | --- | ---
@@ -182,7 +188,7 @@ id | customer | amount | tenant_label
   Same card. Same API endpoint. Same user.
   Only the user attribute value changed.
   The query processor routed to a different database.
-  No JWT. No SSO. Attribute was set directly via Admin API.
+  User Attribute for DB routing was used for queries run via API
 ============================================================
 
 ──────────────────────────────────────────────────────────
